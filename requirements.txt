@@ -1,0 +1,7 @@
+flask
+anthropic
+langchain
+faiss-cpu
+python-dotenv
+pinecone
+sentence-transformers
