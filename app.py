@@ -18,7 +18,7 @@ client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
 
 # Pinecone settings
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
-index_name = os.getenv("PINECONE_INDEX_NAME")
+index_name = "n8n"
 
 if not pinecone_api_key or not index_name:
     raise ValueError("Missing Pinecone API key or index name")
@@ -34,12 +34,15 @@ dimension = 1536 if os.getenv("OPENAI_API_KEY") else 384
 
 # Create index if not exists
 if index_name not in [i.name for i in pc.list_indexes()]:
+    print(f"Creating index {index_name} with dimension {dimension}")
     pc.create_index(
         name=index_name,
         dimension=dimension,
         metric="cosine",
         spec=ServerlessSpec(cloud="aws", region="us-east-1")
     )
+else:
+    print(f"Using existing index: {index_name}")
 
 index = pc.Index(index_name)
 print(f"Connected to index: {index_name}")
