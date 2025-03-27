@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 from dotenv import load_dotenv
 import os
 import anthropic
@@ -7,11 +7,23 @@ from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 from pinecone import Pinecone, ServerlessSpec
 import uuid
+import redis
+from flask_session import Session
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-secret-key")
+
+# Configure Flask-Session
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'chatbot_session:'
+app.config['SESSION_REDIS'] = redis.from_url('redis://localhost:6379')
+Session(app)
 
 # Configure Anthropic
 client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
@@ -44,6 +56,7 @@ if index_name not in [i.name for i in pc.list_indexes()]:
 else:
     print(f"Using existing index: {index_name}")
 
+# ✅ CORRECT USAGE of Index
 index = pc.Index(index_name)
 print(f"Connected to index: {index_name}")
 
@@ -96,27 +109,38 @@ def home():
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    # Gestion du quota de 50 questions/jour
+    today = datetime.today().strftime('%Y-%m-%d')
+    if 'date' not in session or session['date'] != today:
+        session['date'] = today
+        session['question_count'] = 0
+
+    if session.get('question_count', 0) >= 50:
+        return jsonify({"response": "🚫 Tu as dépassé la limite de 50 questions pour aujourd'hui. Reviens demain !"})
+
+    session["question_count"] += 1
+
     data = request.json
     user_message = data.get('message', '')
     try:
         relevant_contexts = get_relevant_context(user_message)
         if not relevant_contexts:
-            context_prompt = f"""The user asked: \"{user_message}\"
+            context_prompt = f"""Tu es un assistant qui répond uniquement à partir d'une base de données précise. 
 
-I don't have any relevant information about this in my database. I can provide a general response, but please note that this information is not from my database:
+L'utilisateur a posé cette question : "{user_message}"
 
-Please provide a general response to this question."""
+Tu n'as trouvé **aucune information** en rapport avec cette question dans la base de données. 
+Donc **tu ne dois pas répondre**.
+
+Contente-toi de dire que tu ne peux pas répondre à cette question car elle ne figure pas dans la base de données."""
         else:
-            context_prompt = f"""Here is the relevant information from my database that might help answer the question:
+            context_prompt = f"""Voici des informations issues de ma base de données qui peuvent t'aider à répondre :
 
 {' '.join(relevant_contexts)}
 
-Based on the above information from my database, please answer the following question: {user_message}
+À partir de ces informations issues de la base de données, réponds à la question suivante : {user_message}
 
-If the information from my database doesn't fully answer the question, please:
-1. Provide what the database says
-2. Mention you're switching to general knowledge
-3. Then add complementary information if needed"""
+⚠️ Tu dois uniquement utiliser les infos présentes dans le contexte. Ne complète pas avec tes connaissances générales."""
 
         response = client.messages.create(
             model="claude-3-opus-20240229",
