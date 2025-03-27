@@ -1,3 +1,18 @@
+.venv/
+.venv_py311/
+
+# Fichiers compilés
+__pycache__/
+*.pyc
+*.pyo
+
+# Cache et logs
+*.log
+
+# Dossiers spécifiques à l'IDE
+.vscode/
+.idea/
+
 # Virtual Environment
 .venv/
 .venv_py311/
