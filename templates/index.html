@@ -1,70 +1,148 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Assistant</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chatbot - Lombalgie 2 Style</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f7f9fc;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .chat-container {
+      max-width: 900px;
+      margin: 50px auto;
+    }
+    .chat-bubble {
+      border-radius: 20px;
+      padding: 20px;
+      background-color: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .chat-window {
+      max-height: 600px;
+      min-height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+      background-color: #f7f7fc;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      margin-bottom: 15px;
+    }
+    .message {
+      padding: 10px 15px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+      max-width: 80%;
+    }
+    .message.user {
+      background-color: #e0f0ff;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+    .message.bot {
+      background-color: #f1f1f1;
+      align-self: flex-start;
+      margin-right: auto;
+    }
+    .typing {
+      font-style: italic;
+      color: gray;
+      margin-bottom: 10px;
+    }
+    .chat-footer {
+      position: sticky;
+      bottom: 0;
+      background-color: #f7f9fc;
+      padding-top: 10px;
+    }
+    .chat-wrapper {
+        background-color: white;
+        border-radius: 24px;
+        padding: 30px;
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
+        max-width: 800px;
+        margin: 40px auto;
+        border: 1px solid #e1e5eb;
+      }
+      
+  </style>
 </head>
 <body>
+  <div class="chat-wrapper container my-5 p-4 rounded shadow">
     <div class="chat-container">
-        <div class="chat-header">
-            <h1>AI Chat Assistant</h1>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-            <!-- Messages will be added here -->
-        </div>
-        <div class="chat-input">
-            <input type="text" id="user-input" placeholder="Type your message...">
-            <button onclick="sendMessage()">Send</button>
-        </div>
+    <div class="chat-bubble mb-3">
+      <h5 class="mb-3">
+        Bonjour, je suis votre agent tuteur personnalisé. J'ai pour fonction de répondre à vos questions de cours en me basant sur les supports de cours mis à votre disposition. Posez-moi vos questions !
+      </h5>
+      <p class="text-muted small">
+        Ces messages sont créés par un robot. Il peut produire des messages erronés. Attention à toujours vous référer aux publications référencées.
+      </p>
     </div>
 
-    <script>
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const message = input.value.trim();
-            if (!message) return;
+    <!-- Chat window -->
+    <div id="chat-window" class="chat-window d-flex flex-column"></div>
 
-            // Add user message to chat
-            addMessage('user', message);
-            input.value = '';
+    <!-- Typing indicator -->
+    <div id="typing-indicator" class="typing d-none">Le bot rédige...</div>
 
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message }),
-                });
+    <!-- Footer -->
+    <div class="chat-footer">
+      <form id="chat-form" class="input-group">
+        <input type="text" id="user-input" class="form-control" placeholder="Saisissez votre question ici" required />
+        <button class="btn btn-primary" type="submit">
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      </form>
+    </div>
+  </div>
 
-                const data = await response.json();
-                if (data.error) {
-                    addMessage('error', data.error);
-                } else {
-                    addMessage('assistant', data.response);
-                }
-            } catch (error) {
-                addMessage('error', 'An error occurred. Please try again.');
-            }
-        }
+  <!-- Scripts -->
+  <script>
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('user-input');
+    const chatWindow = document.getElementById('chat-window');
+    const typingIndicator = document.getElementById('typing-indicator');
 
-        function addMessage(role, content) {
-            const messagesDiv = document.getElementById('chat-messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role}-message`;
-            messageDiv.textContent = content;
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
+    function addMessage(content, sender = 'user') {
+      const messageEl = document.createElement('div');
+      messageEl.classList.add('message', sender);
+      messageEl.textContent = content;
+      chatWindow.appendChild(messageEl);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
 
-        // Allow sending message with Enter key
-        document.getElementById('user-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-    </script>
+    async function fetchBotResponse(message) {
+      typingIndicator.classList.remove('d-none');
+      const response = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      const data = await response.json();
+      typingIndicator.classList.add('d-none');
+      return data.response;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const userMessage = input.value.trim();
+      if (!userMessage) return;
+      addMessage(userMessage, 'user');
+      input.value = '';
+
+      try {
+        const botReply = await fetchBotResponse(userMessage);
+        addMessage(botReply, 'bot');
+      } catch (err) {
+        addMessage("Une erreur est survenue...", 'bot');
+        typingIndicator.classList.add('d-none');
+      }
+    });
+  </script>
+</div> <!-- Fin de chat-container -->
+</div> <!-- Fin de chat-wrapper -->
 </body>
-</html> 
+</html>
