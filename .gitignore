@@ -1,59 +1,20 @@
+# Environnements virtuels
 .venv/
-.venv_py311/
-
-# Fichiers compilés
-__pycache__/
-*.pyc
-*.pyo
-
-# Cache et logs
-*.log
-
-# Dossiers spécifiques à l'IDE
-.vscode/
-.idea/
-
-# Virtual Environment
-.venv/
-.venv_py311/
+.venv_*/
+env/
 venv/
-ENV/
 
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# Fichiers lourds ou binaires IA
+*.dylib
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+*.pt
+*.pth
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
+# Fichiers système
 .DS_Store
-Thumbs.db 
-.venv/
-.venv_py311/
