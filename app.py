@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 from flask import Flask, render_template, request, jsonify, session
-=======
-from flask import Flask, render_template, request, jsonify
->>>>>>> fa4ca8afbf92cb2089666cc7804a3f1930037d73
 from dotenv import load_dotenv
 import os
 import google.generativeai as genai
@@ -11,19 +7,15 @@ from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 from pinecone import Pinecone, ServerlessSpec
 import uuid
-<<<<<<< HEAD
 import redis
 from flask_session import Session
 from datetime import datetime
-=======
->>>>>>> fa4ca8afbf92cb2089666cc7804a3f1930037d73
 
 # Charger les variables d'environnement
 load_dotenv()
 
 # Configurer Flask
 app = Flask(__name__)
-<<<<<<< HEAD
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-secret-key")
 
 # Configurer Flask-Session
@@ -33,8 +25,6 @@ app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'chatbot_session:'
 app.config['SESSION_REDIS'] = redis.from_url('redis://localhost:6379')
 Session(app)
-=======
->>>>>>> fa4ca8afbf92cb2089666cc7804a3f1930037d73
 
 # Configurer Gemini (Google API)
 genai.configure(api_key=os.getenv("GEMINI_API_KEY", "AIzaSyD5GrbVYpv6r2bAuy1OPbp3fDZnyg8tAvU"))
