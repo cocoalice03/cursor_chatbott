@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, jsonify
 >>>>>>> fa4ca8afbf92cb2089666cc7804a3f1930037d73
 from dotenv import load_dotenv
 import os
-import anthropic
+import google.generativeai as genai
 from typing import List
 from sentence_transformers import SentenceTransformer
 from openai import OpenAI
@@ -18,14 +18,15 @@ from datetime import datetime
 =======
 >>>>>>> fa4ca8afbf92cb2089666cc7804a3f1930037d73
 
-# Load environment variables
+# Charger les variables d'environnement
 load_dotenv()
 
+# Configurer Flask
 app = Flask(__name__)
 <<<<<<< HEAD
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "your-secret-key")
 
-# Configure Flask-Session
+# Configurer Flask-Session
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
@@ -35,10 +36,11 @@ Session(app)
 =======
 >>>>>>> fa4ca8afbf92cb2089666cc7804a3f1930037d73
 
-# Configure Anthropic
-client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+# Configurer Gemini (Google API)
+genai.configure(api_key=os.getenv("GEMINI_API_KEY", "AIzaSyD5GrbVYpv6r2bAuy1OPbp3fDZnyg8tAvU"))
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-# Pinecone settings
+# Configuration Pinecone
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 index_name = os.getenv("PINECONE_INDEX_NAME")
 
@@ -47,14 +49,13 @@ if not pinecone_api_key or not index_name:
 
 print(f"Using index name: {index_name}")
 
-# Init Pinecone SDK v6
+# Initialiser Pinecone SDK v6
 print("Using Pinecone SDK v6+")
 pc = Pinecone(api_key=pinecone_api_key)
 
-# Use correct dimension based on embedding model
+# Créer l'index si non existant
 dimension = 1536 if os.getenv("OPENAI_API_KEY") else 384
 
-# Create index if not exists
 if index_name not in [i.name for i in pc.list_indexes()]:
     pc.create_index(
         name=index_name,
@@ -63,10 +64,10 @@ if index_name not in [i.name for i in pc.list_indexes()]:
         spec=ServerlessSpec(cloud="aws", region="us-east-1")
     )
 
-index = pc.index(index_name)
+index = pc.Index(index_name)
 print(f"Connected to index: {index_name}")
 
-# OpenAI client or fallback
+# Client OpenAI ou fallback avec SentenceTransformer
 openai_api_key = os.getenv("OPENAI_API_KEY")
 openai_client = OpenAI(api_key=openai_api_key) if openai_api_key else None
 if openai_client:
@@ -74,8 +75,8 @@ if openai_client:
 else:
     print("OpenAI API key not found, using sentence transformer")
 
-# SentenceTransformer fallback model
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# Utilisation du modèle SentenceTransformer comme fallback
+embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def get_embedding(text: str):
     if openai_client:
@@ -87,7 +88,7 @@ def get_embedding(text: str):
             return response.data[0].embedding
         except Exception as e:
             print(f"Error using OpenAI embeddings: {e}, falling back")
-    return model.encode(text).tolist()
+    return embedding_model.encode(text).tolist()
 
 def add_document_to_index(text: str, metadata: dict = None) -> None:
     embedding = get_embedding(text)
@@ -109,13 +110,26 @@ def get_relevant_context(query: str, top_k: int = 3) -> List[str]:
             contexts.append(text)
     return contexts
 
+# Vérifier le quota de l'utilisateur
+def check_user_quota():
+    today = datetime.today().strftime('%Y-%m-%d')
+    if 'date' not in session or session['date'] != today:
+        session['date'] = today
+        session['question_count'] = 0
+
+    if session.get('question_count', 0) >= 5:
+        return False, "🚫 Vous avez atteint la limite de 5 questions pour aujourd'hui."
+
+    session["question_count"] += 1
+    return True, ""
+
+# Routes de Flask
 @app.route('/')
 def home():
     return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
-<<<<<<< HEAD
     # Gestion du quota de 50 questions/jour
     today = datetime.today().strftime('%Y-%m-%d')
     if 'date' not in session or session['date'] != today:
@@ -127,55 +141,36 @@ def chat():
 
     session["question_count"] += 1
 
-=======
->>>>>>> fa4ca8afbf92cb2089666cc7804a3f1930037d73
     data = request.json
     user_message = data.get('message', '')
+
+    # Vérification du quota via la session
+    allowed, message = check_user_quota()
+    if not allowed:
+        return jsonify({"response": f"🚫 {message}"})
+
     try:
         relevant_contexts = get_relevant_context(user_message)
         if not relevant_contexts:
-<<<<<<< HEAD
             context_prompt = f"""Tu es un assistant qui répond uniquement à partir d'une base de données précise. 
 
 L'utilisateur a posé cette question : "{user_message}"
 
-Tu n'as trouvé **aucune information** en rapport avec cette question dans la base de données. 
+Tu n'as trouvé **aucune information** en rapport avec cette question dans la base de données.
 Donc **tu ne dois pas répondre**.
 
 Contente-toi de dire que tu ne peux pas répondre à cette question car elle ne figure pas dans la base de données."""
         else:
-            context_prompt = f"""Voici des informations issues de ma base de données qui peuvent t'aider à répondre :
+            prompt = f"""Voici des informations issues de ma base de données :
 
-{' '.join(relevant_contexts)}
+{'\n\n'.join(relevant_contexts)}
 
-À partir de ces informations issues de la base de données, réponds à la question suivante : {user_message}
+Réponds à la question suivante uniquement à partir de ces informations : "{user_message}"
 
 ⚠️ Tu dois uniquement utiliser les infos présentes dans le contexte. Ne complète pas avec tes connaissances générales."""
-=======
-            context_prompt = f"""The user asked: \"{user_message}\"
 
-I don't have any relevant information about this in my database. I can provide a general response, but please note that this information is not from my database:
-
-Please provide a general response to this question."""
-        else:
-            context_prompt = f"""Here is the relevant information from my database that might help answer the question:
-
-{' '.join(relevant_contexts)}
-
-Based on the above information from my database, please answer the following question: {user_message}
-
-If the information from my database doesn't fully answer the question, please:
-1. Provide what the database says
-2. Mention you're switching to general knowledge
-3. Then add complementary information if needed"""
->>>>>>> fa4ca8afbf92cb2089666cc7804a3f1930037d73
-
-        response = client.messages.create(
-            model="claude-3-opus-20240229",
-            max_tokens=1000,
-            messages=[{"role": "user", "content": context_prompt}]
-        )
-        return jsonify({"response": response.content[0].text})
+        response = model.generate_content(prompt)
+        return jsonify({"response": response.text})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

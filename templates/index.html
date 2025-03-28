@@ -59,47 +59,42 @@
       padding-top: 10px;
     }
     .chat-wrapper {
-        background-color: white;
-        border-radius: 24px;
-        padding: 30px;
-        box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
-        max-width: 800px;
-        margin: 40px auto;
-        border: 1px solid #e1e5eb;
-      }
-      
+      background-color: white;
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
+      max-width: 800px;
+      margin: 40px auto;
+      border: 1px solid #e1e5eb;
+    }
   </style>
 </head>
 <body>
   <div class="chat-wrapper container my-5 p-4 rounded shadow">
     <div class="chat-container">
-    <div class="chat-bubble mb-3">
-      <h5 class="mb-3">
-        Bonjour, je suis votre agent tuteur personnalisé. J'ai pour fonction de répondre à vos questions de cours en me basant sur les supports de cours mis à votre disposition. Posez-moi vos questions !
-      </h5>
-      <p class="text-muted small">
-        Ces messages sont créés par un robot. Il peut produire des messages erronés. Attention à toujours vous référer aux publications référencées.
-      </p>
-    </div>
+      <div class="chat-bubble mb-3">
+        <h5 class="mb-3">
+          Bonjour, je suis votre agent tuteur personnalisé. J'ai pour fonction de répondre à vos questions de cours en me basant sur les supports de cours mis à votre disposition. Posez-moi vos questions !
+        </h5>
+        <p class="text-muted small">
+          Ces messages sont créés par un robot. Il peut produire des messages erronés. Attention à toujours vous référer aux publications référencées.
+        </p>
+      </div>
 
-    <!-- Chat window -->
-    <div id="chat-window" class="chat-window d-flex flex-column"></div>
+      <div id="chat-window" class="chat-window d-flex flex-column"></div>
+      <div id="typing-indicator" class="typing d-none">Le bot rédige...</div>
 
-    <!-- Typing indicator -->
-    <div id="typing-indicator" class="typing d-none">Le bot rédige...</div>
-
-    <!-- Footer -->
-    <div class="chat-footer">
-      <form id="chat-form" class="input-group">
-        <input type="text" id="user-input" class="form-control" placeholder="Saisissez votre question ici" required />
-        <button class="btn btn-primary" type="submit">
-          <i class="bi bi-arrow-right"></i>
-        </button>
-      </form>
+      <div class="chat-footer">
+        <form id="chat-form" class="input-group">
+          <input type="text" id="user-input" class="form-control" placeholder="Saisissez votre question ici" required />
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-arrow-right"></i>
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 
-  <!-- Scripts -->
   <script>
     const form = document.getElementById('chat-form');
     const input = document.getElementById('user-input');
@@ -119,7 +114,7 @@
       const response = await fetch('/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
+        body: JSON.stringify({ message }) // ✅ suppression du champ email
       });
       const data = await response.json();
       typingIndicator.classList.add('d-none');
@@ -142,7 +137,5 @@
       }
     });
   </script>
-</div> <!-- Fin de chat-container -->
-</div> <!-- Fin de chat-wrapper -->
 </body>
 </html>
